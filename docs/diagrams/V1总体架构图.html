@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="archify 2.14.0">
-  <title>投标文件智能编制与合规审核平台 V1 总体架构 Diagram</title>
+  <title>投标 Agent AI · V1 总体架构 Diagram</title>
   <script>
     // Resolve the theme before first paint so light-preference users don't
     // see a dark flash. The toolbar script below re-applies with UI state.
@@ -4731,25 +4731,6 @@
       svg [data-node-id], svg [data-edge-from], svg [data-detail], svg [data-detail-anchor], svg [data-legend-hit], svg { transition: none !important; }
     }
   </style>
-
-<style id="my-own-part-style">
-  g.my-own-part > rect {
-    stroke: #f5a623 !important;
-    stroke-width: 3px !important;
-    filter: drop-shadow(0 0 6px rgba(245, 166, 35, 0.55));
-  }
-  .my-part-banner {
-    display: inline-block;
-    margin-top: 6px;
-    padding: 4px 12px;
-    border: 1px solid #f5a623;
-    border-radius: 999px;
-    color: #f5a623;
-    font-size: 12px;
-    font-weight: 600;
-    background: rgba(245, 166, 35, 0.08);
-  }
-</style>
 </head>
 <body>
   <!-- Toolbar: theme, live visual style, trace motion, presentation stage, and export.
@@ -4855,10 +4836,9 @@
     <div class="header">
       <div class="header-row">
         <div class="pulse-dot"></div>
-        <h1>投标文件智能编制与合规审核平台 V1 总体架构</h1>
+        <h1>投标 Agent AI · V1 总体架构</h1>
       </div>
-      <p class="subtitle">前端、模块化单体后端、异步任务、Agent与数据基础设施</p>
-<p class="my-part-banner">🟡 金色高亮 = 我负责的 Agent 编排链路（Agent 运行 + MCP 工具层）</p>
+      <p class="subtitle">FastAPI 领域控制 · Deep Agents 阶段级短运行</p>
     </div>
 
     <script id="archify-guided-views-data" type="application/json">[]</script>
@@ -4904,9 +4884,9 @@
 
     <!-- Main Diagram -->
     <div class="diagram-container" data-detail-level="read">
-      <svg viewBox="0 0 1400 760" role="img" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="showcase">
-        <title id="archify-diagram-title">投标文件智能编制与合规审核平台 V1 总体架构</title>
-        <desc id="archify-diagram-description">前端、模块化单体后端、异步任务、Agent与数据基础设施</desc>
+      <svg viewBox="0 0 1500 820" role="img" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="showcase">
+        <title id="archify-diagram-title">投标 Agent AI · V1 总体架构</title>
+        <desc id="archify-diagram-description">FastAPI 领域控制 · Deep Agents 阶段级短运行</desc>
         <!-- Definitions -->
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -4930,222 +4910,190 @@
         <rect width="100%" height="100%" fill="url(#grid)" />
 
         <!-- Boundaries (behind everything) -->
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="0" x="190" y="140" width="1040" height="514" rx="12" class="c-region" stroke-width="1"/>
-        <text x="198" y="158" class="t-cloud" font-size="9" font-weight="600">单台Linux服务器 / Docker Compose</text>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="security-group" data-composition-frame-id="1" x="580" y="140" width="650" height="514" rx="8" class="c-security-group" stroke-width="1"/>
-        <text x="588" y="158" class="t-security" font-size="9" font-weight="600">内部工具网络</text>
 
         <!-- Connection paths (before components for correct z-order) -->
-        <path data-edge-from="browser" data-edge-to="caddy" data-edge-label="HTTPS" data-edge-key="0" data-composition-points="170,332;220,332" d="M 170 332 L 220 332" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="caddy" data-edge-to="next" data-edge-label="页面请求" data-edge-key="1" data-composition-points="360,332;410,332" d="M 360 332 L 410 332" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="caddy" data-edge-to="api" data-edge-label="API反向代理" data-edge-key="2" data-composition-points="290,300;290,240;685,240;685,300" d="M 290 300 L 290 248 Q 290 240 298 240 L 677 240 Q 685 240 685 248 L 685 300" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="next" data-edge-to="api" data-edge-label="/api/v1" data-edge-key="3" data-composition-points="550,332;610,332" d="M 550 332 L 610 332" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="api" data-edge-to="postgres" data-edge-label="事务读写" data-edge-key="4" data-composition-points="760,332;1040,332" d="M 760 332 L 1040 332" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="api" data-edge-to="redis" data-edge-label="发布任务" data-edge-key="5" data-composition-points="685,364;685,570" d="M 685 364 L 685 570" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="redis" data-edge-to="worker" data-edge-label="消费任务" data-edge-key="6" data-composition-points="760,602;795,602;795,502;830,502" d="M 760 602 L 787 602 Q 795 602 795 594 L 795 510 Q 795 502 803 502 L 830 502" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="worker" data-edge-to="postgres" data-edge-label="写入结果" data-edge-key="7" data-composition-points="990,495;1015,495;1015,346;1040,346" d="M 990 495 L 1007 495 Q 1015 495 1015 487 L 1015 354 Q 1015 346 1023 346 L 1040 346" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="worker" data-edge-to="minio" data-edge-label="读取 / 导出" data-edge-key="8" data-composition-points="990,509;1015,509;1015,532;1040,532" d="M 990 509 L 1007 509 Q 1015 509 1015 517 L 1015 524 Q 1015 532 1023 532 L 1040 532" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="worker" data-edge-to="mcp" data-edge-label="MCP Streamable HTTP" data-edge-key="9" data-composition-points="910,470;910,430;1260,430;1260,202;1000,202" d="M 910 470 L 910 438 Q 910 430 918 430 L 1252 430 Q 1260 430 1260 422 L 1260 210 Q 1260 202 1252 202 L 1000 202" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="mcp" data-edge-to="postgres" data-edge-label="业务查询" data-edge-key="10" data-composition-points="1000,209;1020,209;1020,318;1040,318" d="M 1000 209 L 1012 209 Q 1020 209 1020 217 L 1020 310 Q 1020 318 1028 318 L 1040 318" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="mcp" data-edge-to="models" data-edge-label="受控模型调用" data-edge-key="11" data-composition-points="1000,195;1040,195;1040,132;1080,132" d="M 1000 195 L 1032 195 Q 1040 195 1040 187 L 1040 140 Q 1040 132 1048 132 L 1080 132" class="a-security" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
+        <path data-edge-from="user" data-edge-to="web" data-edge-label="HTTPS" data-edge-key="0" data-edge-id="use-ui" data-composition-points="170,314;230,314" d="M 170 314 L 230 314" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="web" data-edge-to="api" data-edge-label="受控业务操作" data-edge-key="1" data-edge-id="call-api" data-composition-points="410,318;480,318" d="M 410 318 L 480 318" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="api" data-edge-to="postgres" data-edge-key="2" data-edge-id="persist" data-composition-points="585,356;585,630" d="M 585 356 L 585 630" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="api" data-edge-to="queue" data-edge-label="发布任务" data-edge-key="3" data-edge-id="publish" data-composition-points="690,318;760,318" d="M 690 318 L 760 318" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="queue" data-edge-to="harness" data-edge-key="4" data-edge-id="start" data-composition-points="945,318;1015,318" d="M 945 318 L 1015 318" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="harness" data-edge-to="a2a" data-edge-key="5" data-edge-id="contract" data-composition-points="1117.5,362;1117.5,386;1141,386;1141,456;1125,456;1125,480" d="M 1117.5 362 L 1117.5 378 Q 1117.5 386 1125.5 386 L 1133 386 Q 1141 386 1141 394 L 1141 448 Q 1141 456 1133 456 L 1133 456 Q 1125 456 1125 464 L 1125 480" class="a-security" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
+        <path data-edge-from="a2a" data-edge-to="agents" data-edge-key="6" data-edge-id="delegate" data-composition-points="1235,521;1262.5,521;1262.5,321;1290,321" d="M 1235 521 L 1254.5 521 Q 1262.5 521 1262.5 513 L 1262.5 329 Q 1262.5 321 1270.5 321 L 1290 321" class="a-security" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
+        <path data-edge-from="agents" data-edge-to="mcp" data-edge-key="7" data-edge-id="tools" data-composition-points="1385,362;1385,480" d="M 1385 362 L 1385 480" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="mcp" data-edge-to="minio" data-edge-key="8" data-edge-id="files" data-composition-points="1385,556;1385,630" d="M 1385 556 L 1385 630" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
 
         <!-- Components -->
-        <g id="node-browser" data-node-id="browser" data-node-label="浏览器" tabindex="0" role="button" aria-label="Focus 浏览器, Next.js页面, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="Next.js页面" data-node-context="Architecture component">
-          <title>浏览器 · Next.js页面 · Architecture component</title>
-          <rect x="40" y="300" width="130" height="64" rx="6" class="c-mask"/>
-          <rect x="40" y="300" width="130" height="64" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(46 306) scale(0.6875)">
+        <g id="node-user" data-node-id="user" data-node-label="业务用户" tabindex="0" role="button" aria-label="Focus 业务用户, 浏览器, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="浏览器" data-node-context="Architecture component">
+          <title>业务用户 · 浏览器 · Architecture component</title>
+          <rect x="40" y="280" width="130" height="68" rx="6" class="c-mask"/>
+          <rect x="40" y="280" width="130" height="68" rx="6" class="c-external" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(46 286) scale(0.6875)">
             <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
-          <text data-detail-anchor x="105" y="330" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">浏览器</text>
-        <text data-detail="context" x="105" y="346" class="t-muted" font-size="9" text-anchor="middle">Next.js页面</text>
+          <text data-detail-anchor x="105" y="312" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">业务用户</text>
+        <text data-detail="context" x="105" y="328" class="t-muted" font-size="9" text-anchor="middle">浏览器</text>
         </g>
 
-        <g id="node-caddy" data-node-id="caddy" data-node-label="Caddy" tabindex="0" role="button" aria-label="Focus Caddy, HTTPS / 反向代理, 单台Linux服务器 / Docker Compose" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="HTTPS / 反向代理" data-node-context="单台Linux服务器 / Docker Compose">
-          <title>Caddy · HTTPS / 反向代理 · 单台Linux服务器 / Docker Compose</title>
-          <rect x="220" y="300" width="140" height="64" rx="6" class="c-mask"/>
-          <rect x="220" y="300" width="140" height="64" rx="6" class="c-cloud" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="cloud" class="semantic-sigil s-cloud" transform="translate(226 306) scale(0.6875)">
-            <path d="M4.3 12.5h7.3a2.4 2.4 0 0 0 .2-4.8 4 4 0 0 0-7.5-1.3A3.1 3.1 0 0 0 4.3 12.5Z"/>
-          </g>
-          <text data-detail-anchor x="290" y="330" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Caddy</text>
-        <text data-detail="context" x="290" y="346" class="t-muted" font-size="9" text-anchor="middle">HTTPS / 反向代理</text>
-        </g>
-
-        <g id="node-next" data-node-id="next" data-node-label="Next.js" tabindex="0" role="button" aria-label="Focus Next.js, 页面与交互, 单台Linux服务器 / Docker Compose" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="页面与交互" data-node-context="单台Linux服务器 / Docker Compose">
-          <title>Next.js · 页面与交互 · 单台Linux服务器 / Docker Compose</title>
-          <rect x="410" y="300" width="140" height="64" rx="6" class="c-mask"/>
-          <rect x="410" y="300" width="140" height="64" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(416 306) scale(0.6875)">
+        <g id="node-web" data-node-id="web" data-node-label="前端应用" tabindex="0" role="button" aria-label="Focus 前端应用, 冻结 UI / 功能 / 风格, Architecture component" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="冻结 UI / 功能 / 风格" data-node-context="Architecture component">
+          <title>前端应用 · 冻结 UI / 功能 / 风格 · Architecture component</title>
+          <rect x="230" y="280" width="180" height="76" rx="6" class="c-mask"/>
+          <rect x="230" y="280" width="180" height="76" rx="6" class="c-frontend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(236 286) scale(0.6875)">
             <rect x="2" y="3" width="12" height="10" rx="2"/>
             <path d="M2 6.5h12"/>
             <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
             <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
           </g>
-          <text data-detail-anchor x="480" y="330" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Next.js</text>
-        <text data-detail="context" x="480" y="346" class="t-muted" font-size="9" text-anchor="middle">页面与交互</text>
+          <text data-detail-anchor x="320" y="316" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">前端应用</text>
+        <text data-detail="context" x="320" y="332" class="t-muted" font-size="9" text-anchor="middle">冻结 UI / 功能 / 风格</text>
         </g>
 
-        <g id="node-api" data-node-id="api" data-node-label="FastAPI" tabindex="0" role="button" aria-label="Focus FastAPI, 领域服务 / API, 单台Linux服务器 / Docker Compose" aria-pressed="false" data-node-kind="backend" data-node-sublabel="领域服务 / API" data-node-context="单台Linux服务器 / Docker Compose">
-          <title>FastAPI · 领域服务 / API · 单台Linux服务器 / Docker Compose</title>
-          <rect x="610" y="300" width="150" height="64" rx="6" class="c-mask"/>
-          <rect x="610" y="300" width="150" height="64" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(616 306) scale(0.6875)">
+        <g id="node-api" data-node-id="api" data-node-label="FastAPI 领域层" tabindex="0" role="button" aria-label="Focus FastAPI 领域层, 权限 / 状态 / 版本 / 人工关口, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-sublabel="权限 / 状态 / 版本 / 人工关口" data-node-context="Architecture component">
+          <title>FastAPI 领域层 · 权限 / 状态 / 版本 / 人工关口 · Architecture component</title>
+          <rect x="480" y="280" width="210" height="76" rx="6" class="c-mask"/>
+          <rect x="480" y="280" width="210" height="76" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(486 286) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-detail-anchor x="685" y="330" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">FastAPI</text>
-        <text data-detail="context" x="685" y="346" class="t-muted" font-size="9" text-anchor="middle">领域服务 / API</text>
+          <text data-detail-anchor x="585" y="316" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">FastAPI 领域层</text>
+        <text data-detail="context" x="585" y="332" class="t-muted" font-size="9" text-anchor="middle">权限 / 状态 / 版本 / 人工关口</text>
         </g>
 
-        <g id="node-worker" class="my-own-part" data-node-id="worker" data-node-label="Celery Worker" tabindex="0" role="button" aria-label="Focus Celery Worker, 解析 / Agent / 导出, 单台Linux服务器 / Docker Compose" aria-pressed="false" data-node-kind="backend" data-node-sublabel="解析 / Agent / 导出" data-node-context="单台Linux服务器 / Docker Compose">
-          <title>Celery Worker · 解析 / Agent / 导出 · 单台Linux服务器 / Docker Compose</title>
-          <rect x="830" y="470" width="160" height="64" rx="6" class="c-mask"/>
-          <rect x="830" y="470" width="160" height="64" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(836 476) scale(0.6875)">
-            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
-          </g>
-          <text data-detail-anchor x="910" y="500" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Celery Worker</text>
-        <text data-detail="context" x="910" y="516" class="t-muted" font-size="9" text-anchor="middle">解析 / Agent / 导出</text>
-        </g>
-
-        <g id="node-mcp" class="my-own-part" data-node-id="mcp" data-node-label="bid-tools-mcp" tabindex="0" role="button" aria-label="Focus bid-tools-mcp, 四类聚合工具能力（14 方法）, 单台Linux服务器 / Docker Compose › 内部工具网络" aria-pressed="false" data-node-kind="backend" data-node-sublabel="四类聚合工具能力（14 方法）" data-node-context="单台Linux服务器 / Docker Compose › 内部工具网络">
-          <title>bid-tools-mcp · 四类聚合工具能力（14 方法） · 单台Linux服务器 / Docker Compose › 内部工具网络</title>
-          <rect x="840" y="170" width="160" height="64" rx="6" class="c-mask"/>
-          <rect x="840" y="170" width="160" height="64" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(846 176) scale(0.6875)">
-            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
-          </g>
-          <text data-detail-anchor x="920" y="200" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">bid-tools-mcp</text>
-        <text data-detail="context" x="920" y="216" class="t-muted" font-size="9" text-anchor="middle">四类聚合工具能力（14 方法）</text>
-        </g>
-
-        <g id="node-postgres" data-node-id="postgres" data-node-label="PostgreSQL" tabindex="0" role="button" aria-label="Focus PostgreSQL, 业务事实源 + pgvector, 单台Linux服务器 / Docker Compose › 内部工具网络" aria-pressed="false" data-node-kind="database" data-node-sublabel="业务事实源 + pgvector" data-node-context="单台Linux服务器 / Docker Compose › 内部工具网络">
-          <title>PostgreSQL · 业务事实源 + pgvector · 单台Linux服务器 / Docker Compose › 内部工具网络</title>
-          <rect x="1040" y="300" width="160" height="64" rx="6" class="c-mask"/>
-          <rect x="1040" y="300" width="160" height="64" rx="6" class="c-database" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(1046 306) scale(0.6875)">
-            <ellipse cx="8" cy="4" rx="5" ry="2"/>
-            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
-          </g>
-          <text data-detail-anchor x="1120" y="330" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">PostgreSQL</text>
-        <text data-detail="context" x="1120" y="346" class="t-muted" font-size="9" text-anchor="middle">业务事实源 + pgvector</text>
-        </g>
-
-        <g id="node-redis" data-node-id="redis" data-node-label="Redis" tabindex="0" role="button" aria-label="Focus Redis, Celery队列 / 锁, 单台Linux服务器 / Docker Compose › 内部工具网络" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="Celery队列 / 锁" data-node-context="单台Linux服务器 / Docker Compose › 内部工具网络">
-          <title>Redis · Celery队列 / 锁 · 单台Linux服务器 / Docker Compose › 内部工具网络</title>
-          <rect x="610" y="570" width="150" height="64" rx="6" class="c-mask"/>
-          <rect x="610" y="570" width="150" height="64" rx="6" class="c-messagebus" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="messagebus" class="semantic-sigil s-messagebus" transform="translate(616 576) scale(0.6875)">
+        <g id="node-queue" data-node-id="queue" data-node-label="Celery + Redis" tabindex="0" role="button" aria-label="Focus Celery + Redis, 异步任务与运行辅助, Architecture component" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="异步任务与运行辅助" data-node-context="Architecture component">
+          <title>Celery + Redis · 异步任务与运行辅助 · Architecture component</title>
+          <rect x="760" y="280" width="185" height="76" rx="6" class="c-mask"/>
+          <rect x="760" y="280" width="185" height="76" rx="6" class="c-messagebus" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="messagebus" class="semantic-sigil s-messagebus" transform="translate(766 286) scale(0.6875)">
             <path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/>
             <circle cx="5" cy="4.5" r="1" class="sigil-fill"/>
             <circle cx="10.5" cy="8" r="1" class="sigil-fill"/>
             <circle cx="7" cy="11.5" r="1" class="sigil-fill"/>
           </g>
-          <text data-detail-anchor x="685" y="600" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Redis</text>
-        <text data-detail="context" x="685" y="616" class="t-muted" font-size="9" text-anchor="middle">Celery队列 / 锁</text>
+          <text data-detail-anchor x="852.5" y="316" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Celery + Redis</text>
+        <text data-detail="context" x="852.5" y="332" class="t-muted" font-size="9" text-anchor="middle">异步任务与运行辅助</text>
         </g>
 
-        <g id="node-minio" data-node-id="minio" data-node-label="MinIO" tabindex="0" role="button" aria-label="Focus MinIO, 原始文件 / 导出物, 单台Linux服务器 / Docker Compose › 内部工具网络" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="原始文件 / 导出物" data-node-context="单台Linux服务器 / Docker Compose › 内部工具网络">
-          <title>MinIO · 原始文件 / 导出物 · 单台Linux服务器 / Docker Compose › 内部工具网络</title>
-          <rect x="1040" y="500" width="160" height="64" rx="6" class="c-mask"/>
-          <rect x="1040" y="500" width="160" height="64" rx="6" class="c-cloud" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="cloud" class="semantic-sigil s-cloud" transform="translate(1046 506) scale(0.6875)">
+        <g id="node-harness" data-node-id="harness" data-node-label="Deep Agents Harness" tabindex="0" role="button" aria-label="Focus Deep Agents Harness, deepagents==0.7.8, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-sublabel="deepagents==0.7.8" data-node-context="Architecture component">
+          <title>Deep Agents Harness · deepagents==0.7.8 · Architecture component</title>
+          <rect x="1015" y="280" width="205" height="82" rx="6" class="c-mask"/>
+          <rect x="1015" y="280" width="205" height="82" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1021 286) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-detail-anchor x="1117.5" y="319" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Deep Agents Harness</text>
+        <text data-detail="context" x="1117.5" y="335" class="t-muted" font-size="9" text-anchor="middle">deepagents==0.7.8</text>
+        </g>
+
+        <g id="node-a2a" data-node-id="a2a" data-node-label="结构化 A2A" tabindex="0" role="button" aria-label="Focus 结构化 A2A, 七种决策 + 委派 / 返回契约, Architecture component" aria-pressed="false" data-node-kind="security" data-node-sublabel="七种决策 + 委派 / 返回契约" data-node-context="Architecture component">
+          <title>结构化 A2A · 七种决策 + 委派 / 返回契约 · Architecture component</title>
+          <rect x="1015" y="480" width="220" height="82" rx="6" class="c-mask"/>
+          <rect x="1015" y="480" width="220" height="82" rx="6" class="c-security" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(1021 486) scale(0.6875)">
+            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
+            <path d="m5.8 8 1.5 1.5 3-3"/>
+          </g>
+          <text data-detail-anchor x="1125" y="519" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">结构化 A2A</text>
+        <text data-detail="context" x="1125" y="535" class="t-muted" font-size="9" text-anchor="middle">七种决策 + 委派 / 返回契约</text>
+        </g>
+
+        <g id="node-agents" data-node-id="agents" data-node-label="4 个专业 Subagent" tabindex="0" role="button" aria-label="Focus 4 个专业 Subagent, 理解 / 规划 / 编制 / 复核, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-sublabel="理解 / 规划 / 编制 / 复核" data-node-context="Architecture component">
+          <title>4 个专业 Subagent · 理解 / 规划 / 编制 / 复核 · Architecture component</title>
+          <rect x="1290" y="280" width="190" height="82" rx="6" class="c-mask"/>
+          <rect x="1290" y="280" width="190" height="82" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1296 286) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-detail-anchor x="1385" y="319" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">4 个专业 Subagent</text>
+        <text data-detail="context" x="1385" y="335" class="t-muted" font-size="9" text-anchor="middle">理解 / 规划 / 编制 / 复核</text>
+        </g>
+
+        <g id="node-mcp" data-node-id="mcp" data-node-label="bid-tools-mcp" tabindex="0" role="button" aria-label="Focus bid-tools-mcp, Skill 白名单工具, Architecture component" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="Skill 白名单工具" data-node-context="Architecture component">
+          <title>bid-tools-mcp · Skill 白名单工具 · Architecture component</title>
+          <rect x="1290" y="480" width="190" height="76" rx="6" class="c-mask"/>
+          <rect x="1290" y="480" width="190" height="76" rx="6" class="c-cloud" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="cloud" class="semantic-sigil s-cloud" transform="translate(1296 486) scale(0.6875)">
             <path d="M4.3 12.5h7.3a2.4 2.4 0 0 0 .2-4.8 4 4 0 0 0-7.5-1.3A3.1 3.1 0 0 0 4.3 12.5Z"/>
           </g>
-          <text data-detail-anchor x="1120" y="530" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">MinIO</text>
-        <text data-detail="context" x="1120" y="546" class="t-muted" font-size="9" text-anchor="middle">原始文件 / 导出物</text>
+          <text data-detail-anchor x="1385" y="516" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">bid-tools-mcp</text>
+        <text data-detail="context" x="1385" y="532" class="t-muted" font-size="9" text-anchor="middle">Skill 白名单工具</text>
         </g>
 
-        <g id="node-models" data-node-id="models" data-node-label="OCR与多模态" tabindex="0" role="button" aria-label="Focus OCR与多模态, CPU解析 / 复杂图表理解, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="CPU解析 / 复杂图表理解" data-node-context="Architecture component">
-          <title>OCR与多模态 · CPU解析 / 复杂图表理解 · Architecture component</title>
-          <rect x="1080" y="100" width="180" height="64" rx="6" class="c-mask"/>
-          <rect x="1080" y="100" width="180" height="64" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(1086 106) scale(0.6875)">
-            <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
-            <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
+        <g id="node-postgres" data-node-id="postgres" data-node-label="PostgreSQL" tabindex="0" role="button" aria-label="Focus PostgreSQL, 唯一业务事实源, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="唯一业务事实源" data-node-context="Architecture component">
+          <title>PostgreSQL · 唯一业务事实源 · Architecture component</title>
+          <rect x="480" y="630" width="210" height="78" rx="6" class="c-mask"/>
+          <rect x="480" y="630" width="210" height="78" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(486 636) scale(0.6875)">
+            <ellipse cx="8" cy="4" rx="5" ry="2"/>
+            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
-          <text data-detail-anchor x="1170" y="130" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">OCR与多模态</text>
-        <text data-detail="context" x="1170" y="146" class="t-muted" font-size="9" text-anchor="middle">CPU解析 / 复杂图表理解</text>
+          <text data-detail-anchor x="585" y="667" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">PostgreSQL</text>
+        <text data-detail="context" x="585" y="683" class="t-muted" font-size="9" text-anchor="middle">唯一业务事实源</text>
+        </g>
+
+        <g id="node-minio" data-node-id="minio" data-node-label="MinIO" tabindex="0" role="button" aria-label="Focus MinIO, 原始文件与导出物, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="原始文件与导出物" data-node-context="Architecture component">
+          <title>MinIO · 原始文件与导出物 · Architecture component</title>
+          <rect x="1290" y="630" width="190" height="76" rx="6" class="c-mask"/>
+          <rect x="1290" y="630" width="190" height="76" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(1296 636) scale(0.6875)">
+            <ellipse cx="8" cy="4" rx="5" ry="2"/>
+            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
+          </g>
+          <text data-detail-anchor x="1385" y="666" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">MinIO</text>
+        <text data-detail="context" x="1385" y="682" class="t-muted" font-size="9" text-anchor="middle">原始文件与导出物</text>
         </g>
 
         <!-- Connection labels -->
-        <g data-detail="context" data-edge-from="browser" data-edge-to="caddy" data-edge-label="HTTPS" data-edge-key="0">
-          <rect x="178" y="312" width="34" height="14" rx="3" class="c-mask"/>
-          <text x="195" y="322" class="t-backend" font-size="8" text-anchor="middle">HTTPS</text>
+        <g data-detail="context" data-edge-from="user" data-edge-to="web" data-edge-label="HTTPS" data-edge-key="0" data-edge-id="use-ui">
+          <rect x="183" y="294" width="34" height="14" rx="3" class="c-mask"/>
+          <text x="200" y="304" class="t-backend" font-size="8" text-anchor="middle">HTTPS</text>
         </g>
-        <g data-detail="context" data-edge-from="caddy" data-edge-to="next" data-edge-label="页面请求" data-edge-key="1">
-          <rect x="360.8" y="312" width="48.4" height="14" rx="3" class="c-mask"/>
-          <text x="385" y="322" class="t-muted" font-size="8" text-anchor="middle">页面请求</text>
+        <g data-detail="context" data-edge-from="web" data-edge-to="api" data-edge-label="受控业务操作" data-edge-key="1" data-edge-id="call-api">
+          <rect x="411.2" y="298" width="67.6" height="14" rx="3" class="c-mask"/>
+          <text x="445" y="308" class="t-muted" font-size="8" text-anchor="middle">受控业务操作</text>
         </g>
-        <g data-detail="context" data-edge-from="caddy" data-edge-to="api" data-edge-label="API反向代理" data-edge-key="2">
-          <rect x="456.1" y="220" width="62.8" height="14" rx="3" class="c-mask"/>
-          <text x="487.5" y="230" class="t-backend" font-size="8" text-anchor="middle">API反向代理</text>
+
+        <g data-detail="context" data-edge-from="api" data-edge-to="queue" data-edge-label="发布任务" data-edge-key="3" data-edge-id="publish">
+          <rect x="700.8" y="298" width="48.4" height="14" rx="3" class="c-mask"/>
+          <text x="725" y="308" class="t-muted" font-size="8" text-anchor="middle">发布任务</text>
         </g>
-        <g data-detail="context" data-edge-from="next" data-edge-to="api" data-edge-label="/api/v1" data-edge-key="3">
-          <rect x="558.2" y="312" width="43.6" height="14" rx="3" class="c-mask"/>
-          <text x="580" y="322" class="t-muted" font-size="8" text-anchor="middle">/api/v1</text>
-        </g>
-        <g data-detail="context" data-edge-from="api" data-edge-to="postgres" data-edge-label="事务读写" data-edge-key="4">
-          <rect x="875.8" y="312" width="48.4" height="14" rx="3" class="c-mask"/>
-          <text x="900" y="322" class="t-muted" font-size="8" text-anchor="middle">事务读写</text>
-        </g>
-        <g data-detail="context" data-edge-from="api" data-edge-to="redis" data-edge-label="发布任务" data-edge-key="5">
-          <rect x="660.8" y="368" width="48.4" height="14" rx="3" class="c-mask"/>
-          <text x="685" y="378" class="t-messagebus" font-size="8" text-anchor="middle">发布任务</text>
-        </g>
-        <g data-detail="context" data-edge-from="redis" data-edge-to="worker" data-edge-label="消费任务" data-edge-key="6">
-          <rect x="770.8" y="532" width="48.4" height="14" rx="3" class="c-mask"/>
-          <text x="795" y="542" class="t-messagebus" font-size="8" text-anchor="middle">消费任务</text>
-        </g>
-        <g data-detail="context" data-edge-from="worker" data-edge-to="postgres" data-edge-label="写入结果" data-edge-key="7">
-          <rect x="990.8" y="400.5" width="48.4" height="14" rx="3" class="c-mask"/>
-          <text x="1015" y="410.5" class="t-muted" font-size="8" text-anchor="middle">写入结果</text>
-        </g>
-        <g data-detail="context" data-edge-from="worker" data-edge-to="minio" data-edge-label="读取 / 导出" data-edge-key="8">
-          <rect x="983.6" y="567.5" width="62.8" height="14" rx="3" class="c-mask"/>
-          <text x="1015" y="577.5" class="t-messagebus" font-size="8" text-anchor="middle">读取 / 导出</text>
-        </g>
-        <g data-detail="context" data-edge-from="worker" data-edge-to="mcp" data-edge-label="MCP Streamable HTTP" data-edge-key="9">
-          <rect x="1034.4" y="410" width="101.2" height="14" rx="3" class="c-mask"/>
-          <text x="1085" y="420" class="t-backend" font-size="8" text-anchor="middle">MCP Streamable HTTP</text>
-        </g>
-        <g data-detail="context" data-edge-from="mcp" data-edge-to="postgres" data-edge-label="业务查询" data-edge-key="10">
-          <rect x="995.8" y="243.5" width="48.4" height="14" rx="3" class="c-mask"/>
-          <text x="1020" y="253.5" class="t-muted" font-size="8" text-anchor="middle">业务查询</text>
-        </g>
-        <g data-detail="context" data-edge-from="mcp" data-edge-to="models" data-edge-label="受控模型调用" data-edge-key="11">
-          <rect x="1006.2" y="143.5" width="67.6" height="14" rx="3" class="c-mask"/>
-          <text x="1040" y="153.5" class="t-security" font-size="8" text-anchor="middle">受控模型调用</text>
-        </g>
+
+
+
+
+
 
         <!-- Legend -->
         <g data-legend data-legend-bridge>
-          <text x="40" y="724" class="t-primary" font-size="12" font-weight="650">Legend</text>
-          <g data-legend-semantic-kind="frontend" data-legend-kind="frontend" data-legend-label="Frontend" data-legend-x="40" data-legend-baseline="744" data-legend-width="83">
-            <rect x="40" y="735" width="16" height="10" rx="2.5" class="c-frontend" stroke-width="1"/>
-            <text x="62" y="744" class="t-muted" font-size="10" font-weight="500">Frontend</text>
+          <text x="40" y="784" class="t-primary" font-size="12" font-weight="650">Legend</text>
+          <g data-legend-semantic-kind="frontend" data-legend-kind="frontend" data-legend-label="Frontend" data-legend-x="40" data-legend-baseline="804" data-legend-width="83">
+            <rect x="40" y="795" width="16" height="10" rx="2.5" class="c-frontend" stroke-width="1"/>
+            <text x="62" y="804" class="t-muted" font-size="10" font-weight="500">Frontend</text>
           </g>
-          <g data-legend-semantic-kind="backend" data-legend-kind="backend" data-legend-label="Backend" data-legend-x="145" data-legend-baseline="744" data-legend-width="78">
-            <rect x="145" y="735" width="16" height="10" rx="2.5" class="c-backend" stroke-width="1"/>
-            <text x="167" y="744" class="t-muted" font-size="10" font-weight="500">Backend</text>
+          <g data-legend-semantic-kind="backend" data-legend-kind="backend" data-legend-label="Backend" data-legend-x="145" data-legend-baseline="804" data-legend-width="78">
+            <rect x="145" y="795" width="16" height="10" rx="2.5" class="c-backend" stroke-width="1"/>
+            <text x="167" y="804" class="t-muted" font-size="10" font-weight="500">Backend</text>
           </g>
-          <g data-legend-semantic-kind="database" data-legend-kind="database" data-legend-label="Database" data-legend-x="245" data-legend-baseline="744" data-legend-width="83">
-            <rect x="245" y="735" width="16" height="10" rx="2.5" class="c-database" stroke-width="1"/>
-            <text x="267" y="744" class="t-muted" font-size="10" font-weight="500">Database</text>
+          <g data-legend-semantic-kind="database" data-legend-kind="database" data-legend-label="Database" data-legend-x="245" data-legend-baseline="804" data-legend-width="83">
+            <rect x="245" y="795" width="16" height="10" rx="2.5" class="c-database" stroke-width="1"/>
+            <text x="267" y="804" class="t-muted" font-size="10" font-weight="500">Database</text>
           </g>
-          <g data-legend-semantic-kind="cloud" data-legend-kind="cloud" data-legend-label="Cloud" data-legend-x="350" data-legend-baseline="744" data-legend-width="68">
-            <rect x="350" y="735" width="16" height="10" rx="2.5" class="c-cloud" stroke-width="1"/>
-            <text x="372" y="744" class="t-muted" font-size="10" font-weight="500">Cloud</text>
+          <g data-legend-semantic-kind="cloud" data-legend-kind="cloud" data-legend-label="Cloud" data-legend-x="350" data-legend-baseline="804" data-legend-width="68">
+            <rect x="350" y="795" width="16" height="10" rx="2.5" class="c-cloud" stroke-width="1"/>
+            <text x="372" y="804" class="t-muted" font-size="10" font-weight="500">Cloud</text>
           </g>
-          <g data-legend-semantic-kind="messagebus" data-legend-kind="messagebus" data-legend-label="Message bus" data-legend-x="440" data-legend-baseline="744" data-legend-width="98">
-            <rect x="440" y="735" width="16" height="10" rx="2.5" class="c-messagebus" stroke-width="1"/>
-            <text x="462" y="744" class="t-muted" font-size="10" font-weight="500">Message bus</text>
+          <g data-legend-semantic-kind="security" data-legend-kind="security" data-legend-label="Security" data-legend-x="440" data-legend-baseline="804" data-legend-width="83">
+            <rect x="440" y="795" width="16" height="10" rx="2.5" class="c-security" stroke-width="1"/>
+            <text x="462" y="804" class="t-muted" font-size="10" font-weight="500">Security</text>
           </g>
-          <g data-legend-semantic-kind="external" data-legend-kind="external" data-legend-label="External" data-legend-x="560" data-legend-baseline="744" data-legend-width="83">
-            <rect x="560" y="735" width="16" height="10" rx="2.5" class="c-external" stroke-width="1"/>
-            <text x="582" y="744" class="t-muted" font-size="10" font-weight="500">External</text>
+          <g data-legend-semantic-kind="messagebus" data-legend-kind="messagebus" data-legend-label="Message bus" data-legend-x="545" data-legend-baseline="804" data-legend-width="98">
+            <rect x="545" y="795" width="16" height="10" rx="2.5" class="c-messagebus" stroke-width="1"/>
+            <text x="567" y="804" class="t-muted" font-size="10" font-weight="500">Message bus</text>
+          </g>
+          <g data-legend-semantic-kind="external" data-legend-kind="external" data-legend-label="External" data-legend-x="665" data-legend-baseline="804" data-legend-width="83">
+            <rect x="665" y="795" width="16" height="10" rx="2.5" class="c-external" stroke-width="1"/>
+            <text x="687" y="804" class="t-muted" font-size="10" font-weight="500">External</text>
           </g>
         </g>
       </svg>
@@ -5333,37 +5281,23 @@
     <div class="cards">
       <div class="card">
         <div class="card-header">
-          <div class="card-dot cyan"></div>
-          <h3>主链</h3>
-        </div>
-        <ul>
-          <li>&bull; Caddy分别反向代理Next.js页面和FastAPI接口</li>
-          <li>&bull; PostgreSQL保存业务事实、版本与审计</li>
-          <li>&bull; 高风险状态修改必须经过领域服务</li>
-        </ul>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
           <div class="card-dot emerald"></div>
-          <h3>异步链</h3>
+          <h3>当前实施基线</h3>
         </div>
         <ul>
-          <li>&bull; 解析、OCR、Agent和导出进入Celery</li>
-          <li>&bull; Redis只承担队列和临时运行状态</li>
-          <li>&bull; Worker可在重启后依据任务记录恢复</li>
+          <li>&bull; Deep Agents 迁移设计已冻结，代码正在实施</li>
+          <li>&bull; 项目代码不直接构建 LangGraph StateGraph</li>
         </ul>
       </div>
 
       <div class="card">
         <div class="card-header">
           <div class="card-dot rose"></div>
-          <h3>边界</h3>
+          <h3>确定性控制</h3>
         </div>
         <ul>
-          <li>&bull; MinIO保存原始文件和导出文件</li>
-          <li>&bull; MCP只提供工具协议和能力适配</li>
-          <li>&bull; 普通文档走OCR，复杂图表使用多模态辅助</li>
+          <li>&bull; SDK 自由规划不能直接改变业务状态</li>
+          <li>&bull; 权限、版本、人工关口与审计由领域层控制</li>
         </ul>
       </div>
     </div>

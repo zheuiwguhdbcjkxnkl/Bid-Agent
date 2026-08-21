@@ -93,7 +93,35 @@ Deep Agents只在Agent运行层承担智能规划与委派。FastAPI领域服务
 - 冻结基线；
 - 自动外部递交。
 
-### 5.2 四个专业Subagent
+### 5.2 结构化A2A与七种决策契约
+
+Deep Agents内部可以使用SDK的自由任务规划和Subagent委派，但自由规划不是业务A2A消息，也不能直接驱动状态变化。所有跨Agent委派和阶段退出必须经过代码层Pydantic契约，并写入运行记录和审计事件。
+
+七种决策继续保留：
+
+```text
+DISPATCH_AGENT
+WAITING_HUMAN
+RETRY_TASK
+EXPAND_REVIEW_SCOPE
+INVALIDATE_OUTPUTS
+BLOCK_WORKFLOW
+COMPLETE_STAGE
+```
+
+正式契约包括：
+
+- `OrchestrationDecision`：记录主Agent对本阶段下一步的结构化建议；
+- `AgentDelegationEnvelope`：记录向Subagent派发的任务、输入引用、Skill版本和工具白名单；
+- `SubagentResultEnvelope`：记录Subagent产物引用、发现项、风险信号、未解决事项和建议决策。
+
+`OrchestrationDecision`至少包含`decision_type`、`workflow_run_id`、`agent_run_id`、`project_id`、`current_stage`、`target_agent`、`task_type`、`input_refs`、`input_hash`、`reason_code`、`pending_gate`和`idempotency_key`。
+
+`AgentDelegationEnvelope`至少包含`delegation_id`、`parent_agent_run_id`、`target_subagent`、`task_type`、`input_refs`、`allowed_tools`、`skill_versions`、`expected_output_schema`和`idempotency_key`。
+
+模型生成的计划、todo和自由文本只能用于运行期推理与诊断。只有Schema校验通过的结构化Envelope才能进入A2A审计；只有领域服务再次校验通过后，决策才能产生业务效果。
+
+### 5.3 四个专业Subagent
 
 | Subagent | 主要职责 | 绑定Skill | 主要MCP域 |
 |---|---|---|---|
@@ -208,6 +236,22 @@ Worker创建MCP Client
 
 Deep Agents可以在敏感工具调用前请求批准，但该批准只控制Agent工具执行，不能替代领域人工关口。领域关口仍通过现有HTTP接口提交，并由后端检查角色、状态、输入版本和必确认项。
 
+### 8.1 多段短运行续接语义
+
+一个`workflow_run`贯穿整条业务流程，但每个阶段使用新的短期`agent_run`。Agent完成阶段产物后结束本次运行，领域层将`workflow_run`置为`WAITING_HUMAN`；人工确认后不是恢复旧Agent上下文，而是在同一业务流程中创建下一段`agent_run`和`task_run`。
+
+```text
+workflow_run长期存在
+→ 阶段agent_run执行并结束
+→ 写入DRAFT产物
+→ workflow_run进入WAITING_HUMAN
+→ 人工接口确认并冻结基线
+→ 创建下一阶段agent_run与task_run
+→ workflow_run继续RUNNING
+```
+
+人工确认事务必须同时完成权限、预期关口、`expected_input_hash`、DRAFT版本和幂等键校验，并写入`workflow_gate_action`、业务基线、下一阶段运行记录和审计事件。事务提交后才发布Celery消息。重复提交同一`Idempotency-Key`返回首次结果，不创建重复运行。
+
 ## 九、运行、任务与数据模型
 
 保留：
@@ -226,6 +270,22 @@ Deep Agents可以在敏感工具调用前请求批准，但该批准只控制Age
 - 可选保存SDK运行引用`runtime_run_ref`，但该字段不是业务主键；
 - 不单独保存完整模型上下文和长工具输出，使用MinIO对象或业务结果引用；
 - Deep Agents内部Checkpoint只用于运行恢复，不作为业务事实源。
+
+状态语义固定为：`workflow_run`表示长期业务流程；`agent_run`表示一次短期Deep Agents调用，完成后不跨领域人工关口恢复；`task_run`表示一次Celery执行尝试，可以按幂等规则重试。
+
+新增`workflow.agent_delegation`或等价追加记录，用于保存`AgentDelegationEnvelope`、接收方、输入哈希、Skill版本、工具白名单、输出引用和最终状态。七种`OrchestrationDecision`作为追加记录保存，不覆盖历史决策。
+
+## 九点一、依赖版本锁定与升级治理
+
+首个实现版本精确锁定：
+
+```text
+deepagents==0.7.8
+```
+
+使用`uv.lock`锁定完整Python依赖树，CI必须从锁文件安装。不得使用`deepagents>=0.7.8`，不得自动合并Deep Agents及其核心运行时升级。
+
+每次升级必须使用独立PR，记录旧版、新版、发布说明、兼容影响和回滚方式，并执行：主Agent构建、Subagent委派、结构化A2A、Skills按需加载、MCP适配、工具白名单、人工关口续接、异常重试、输入失效和固定评测集回归。升级通过前保留旧锁文件和可回滚部署产物。
 
 ## 十、上下文与Memory边界
 
@@ -345,9 +405,15 @@ Agent实例可以按模型、Skill版本和工具版本缓存，但每次运行�
 - `specs/15-评估体系与测试计划.md`中的技术运行表述；
 - `specs/17-技术方案与系统架构设计.md`；
 - `specs/18-数据库设计与实现方案.md`；
+- `specs/19-产品经理讲解稿-剥洋葱版.md`；
+- `specs/20-讲解稿-业务紧贴版.md`；
 - `docs/diagrams/V1总体架构图.html`；
 - `docs/diagrams/投标Agent编排架构图.html`；
 - `docs/diagrams/记忆与上下文流转图.html`；
 - 后续四人协作方案和M1开发计划。
 
 早期`specs/research`继续保留历史研究性质，不逐条改写；正式技术选型以本设计、技术方案和最新项目决策记录为准。
+
+## 十八、讲解口径
+
+在正式代码尚未实施完成前，统一表述为：项目已确认从自维护LangGraph主图迁移到Deep Agents Harness，迁移设计已冻结，代码正在实施。保留结构化A2A、七种调度决策、确定性领域状态机和四个人工关口；不宣称Deep Agents已经完成生产接入，也不表述为完全移除LangGraph依赖，因为Deep Agents内部仍使用LangGraph runtime。
