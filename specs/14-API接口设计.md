@@ -86,7 +86,7 @@
 | GET | `/api/v1/workflow-runs/{workflow_run_id}/pending-gate` | 查询当前阶段级人工关口 |
 | POST | `/api/v1/workflow-runs/{workflow_run_id}/pending-gate/actions` | 提交确认、退回或取消动作 |
 
-四个人工关口固定为`REQUIREMENT_BASELINE_CONFIRMATION`、`RESPONSE_PLAN_CONFIRMATION`、`CHAPTER_DRAFT_CONFIRMATION`和`REVIEW_RESULT_CONFIRMATION`。前端不得调用通用LangGraph Resume接口绕过领域门禁。
+四个人工关口固定为`REQUIREMENT_BASELINE_CONFIRMATION`、`RESPONSE_PLAN_CONFIRMATION`、`CHAPTER_DRAFT_CONFIRMATION`和`REVIEW_RESULT_CONFIRMATION`。前端只能调用领域关口查询和动作接口，不得调用任何通用运行时恢复接口绕过领域门禁。
 
 ## 七、证据、编制、审核与风险接口
 
