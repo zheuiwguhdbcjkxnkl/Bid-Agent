@@ -1,0 +1,36 @@
+# Dependencies and build output
+node_modules/
+.next/
+dist/
+build/
+coverage/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Runtime and tool artifacts
+.playwright-mcp/
+.superpowers/
+playwright-report/
+test-results/
+*.log
+
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Office temporary lock files
+~$*
