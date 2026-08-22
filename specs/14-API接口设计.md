@@ -1,7 +1,7 @@
 # 14 API接口设计
 
-> 版本：v1.1
-> 更新日期：2026-08-20
+> 版本：v1.2
+> 更新日期：2026-08-21
 > 文档状态：V1 API契约基线
 > 上游文档：`11-产品需求文档（PRD）.md`、`09-业务流程与项目状态机.md`、`10-核心业务对象与数据字典.md`、`17-技术方案与系统架构设计.md`
 
@@ -35,20 +35,36 @@
 
 登录失败返回`401 INVALID_CREDENTIALS`，不得暴露账号是否存在。V1不开放自行注册、短信登录、社交登录或密码找回邮件。
 
+认证契约补充如下：
+
+- `POST /api/v1/auth/login`请求体包含`login_name`和`password`；成功后创建PostgreSQL Session并设置安全Cookie。
+- `GET /api/v1/auth/session`返回当前用户、平台角色、会话过期时间和允许动作。
+- Session Cookie使用`HttpOnly`、生产环境`Secure`和`SameSite=Lax`；写请求通过CSRF Cookie与`X-CSRF-Token`请求头执行双重校验。
+- Session默认空闲30分钟过期，绝对最长8小时；退出、修改密码、账号禁用和关键角色变化按规则撤销有效Session。
+- `must_change_password=true`时，当前Session只允许查询Session、退出和修改密码；工作台与项目接口返回`PASSWORD_CHANGE_REQUIRED`，改密成功后再开放业务权限。
+- 登录接口校验允许的`Origin`或`Referer`并执行账号与来源组合限流；超过限制返回`429 LOGIN_RATE_LIMITED`。
+
 ## 四、工作台与项目接口
 
 | 方法 | 路径 | 用途 | 权限 |
 |---|---|---|---|
 | GET | `/api/v1/me/workbench` | 获取个人待办、最近项目、运行任务和失败摘要 | 已登录 |
 | GET | `/api/v1/projects` | 查询有权访问的项目列表 | 已登录 |
-| POST | `/api/v1/projects` | 创建投标项目、主标包和创建人成员关系 | 投标经理 |
+| POST | `/api/v1/projects` | 创建投标项目、主标包和负责人成员关系 | 投标经理 |
 | PATCH | `/api/v1/projects/{project_id}` | 保存项目草稿或更新允许修改的基本信息 | 投标经理 |
 | GET | `/api/v1/projects/{project_id}/overview` | 获取项目阶段、当前行动、阻断和运行摘要 | 项目成员 |
 | GET | `/api/v1/projects/{project_id}/context` | 获取有效版本、基线、权限和允许动作 | 项目成员 |
 | POST | `/api/v1/projects/{project_id}/members` | 添加项目成员 | 投标经理 |
 | POST | `/api/v1/projects/{project_id}/decision` | 记录是否参与投标的人工决定 | 投标经理 |
 
-创建项目请求至少包含`project_name`、`procurement_mode`、`regime_type`和`deadline_at`。后端在同一事务中创建项目、唯一主标包、创建人成员关系和审计事件。
+创建项目请求采用分步创建口径：
+
+- 第一切片必填：`project_name`、`procurement_method`、`regime_type`、`deadline_at`、`owner_user_id`；
+- `project_source`与`external_project_code`不由第一切片的`POST /api/v1/projects`接收，在后续数据连接或采购文件接口中写入`source_record`；
+- 后端在同一事务中创建`DRAFT`项目、V1唯一主标包、负责人的`project_member`关系、幂等记录和审计事件；创建人只通过审计事件留痕，若不是负责人则不自动获得项目访问权；
+- `owner_user_id`必须属于当前组织、账号有效且平台角色允许承担`BID_MANAGER`；
+- 保存项目不启动解析、不创建`task_run`、不运行Agent；
+- `POST /api/v1/projects`强制使用`Idempotency-Key`。相同作用域、相同键和相同请求体返回首次状态码与响应；相同键对应不同请求体返回`409 IDEMPOTENCY_CONFLICT`；首次事务失败不缓存成功响应，允许使用同一键安全重试。
 
 ## 五、文件、解析与任务接口
 
@@ -140,8 +156,20 @@ Agent只能生成建议和新版本，不能静默覆盖人工锁定内容、确
 - `PARSE_FAILED`：解析失败，需要人工处理或有限重试。
 - `TASK_NOT_FOUND`：任务不存在或不属于当前项目。
 - `IDEMPOTENCY_CONFLICT`：幂等键已对应另一份请求。
+- `IDEMPOTENCY_KEY_REQUIRED`：当前写接口要求提供有效的`Idempotency-Key`请求头。
+- `INVALID_CREDENTIALS`：登录凭据无效，且不得暴露账号是否存在。
+- `VALIDATION_ERROR`：请求字段或业务输入校验失败。
+- `PROJECT_CODE_CONFLICT`：内部项目编号唯一约束冲突。
+- `OWNER_ROLE_MISMATCH`：项目负责人不存在、不可用或平台角色不兼容。
+- `OWNER_ORGANIZATION_MISMATCH`：项目负责人与当前组织不一致。
+- `PASSWORD_CHANGE_REQUIRED`：当前账号必须先修改临时密码才能访问业务接口。
+- `LOGIN_RATE_LIMITED`：登录失败次数超过账号与来源组合的短期限制。
+- `ORIGIN_NOT_ALLOWED`：登录或写请求来源不在允许范围内。
+- `SESSION_EXPIRED`：Session超过空闲期限或绝对期限。
+- `CSRF_VALIDATION_FAILED`：写请求的CSRF校验失败。
+- `INTERNAL_ERROR`：未预期内部错误；响应不得暴露堆栈。
 
-创建任务、关口动作、版本确认、风险接受、基线冻结、交接包和递交登记必须支持`Idempotency-Key`。写请求同时校验Session、角色、对象所属项目、当前状态、输入版本和前置门禁。
+项目创建、创建任务、关口动作、版本确认、风险接受、基线冻结、交接包和递交登记必须支持`Idempotency-Key`。幂等作用域至少包含组织、操作者、HTTP方法和路由；相同键不同请求体返回`IDEMPOTENCY_CONFLICT`。写请求同时校验Session、角色、对象所属项目、当前状态、输入版本和前置门禁。
 
 ## 十、与前端契约映射
 
