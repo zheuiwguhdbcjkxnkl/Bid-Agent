@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:17.6-alpine
+    environment:
+      POSTGRES_DB: bid_agent_test
+      POSTGRES_USER: bid_agent
+      POSTGRES_PASSWORD: bid_agent_test
+    ports:
+      - "55432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bid_agent -d bid_agent_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s

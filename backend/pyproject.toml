@@ -1,0 +1,46 @@
+[project]
+name = "bid-agent-ai-backend"
+version = "0.1.0"
+description = "bid-agent-ai 后端工程基座"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "alembic",
+  "argon2-cffi",
+  "fastapi",
+  "httpx",
+  "psycopg[binary,pool]",
+  "pydantic-settings",
+  "redis",
+  "sqlalchemy[asyncio]",
+  "uvicorn[standard]",
+]
+
+[dependency-groups]
+dev = [
+  "mypy",
+  "pytest",
+  "pytest-asyncio",
+  "ruff",
+]
+
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+explicit_package_bases = true
+plugins = ["pydantic.mypy", "sqlalchemy.ext.mypy.plugin"]
+
+[tool.uv]
+package = false
