@@ -10,6 +10,7 @@ dependencies = [
   "fastapi",
   "httpx",
   "psycopg[binary,pool]",
+  "python-multipart",
   "pydantic-settings",
   "redis",
   "sqlalchemy[asyncio]",

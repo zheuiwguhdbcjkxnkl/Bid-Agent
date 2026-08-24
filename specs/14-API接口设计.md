@@ -95,6 +95,18 @@
 
 原文件进入MinIO，PostgreSQL保存对象键、SHA-256、版本、分类、权限、解析状态和来源关系。上传、解析、OCR、复杂图表理解和导出均使用`task_run`记录最终状态。
 
+当前 M1 文件上传子切片只实现文件列表和逻辑文件首个版本上传，契约补充如下：
+
+- `GET /api/v1/projects/{project_id}/documents` 要求有效 PostgreSQL Session 和当前组织内的 ACTIVE 项目成员关系，返回逻辑文件及其版本摘要；不返回文件二进制内容。
+- `POST /api/v1/projects/{project_id}/documents` 使用 `multipart/form-data`，字段为 `file`、`document_type` 和 `display_name`；要求有效 Session、`X-CSRF-Token` 和 `Idempotency-Key`，仅当前组织内的 ACTIVE 项目负责人可以上传。
+- `document_type` 仅允许 `ANNOUNCEMENT`、`PROCUREMENT_FILE`、`CLARIFICATION`、`CORRECTION`、`ADDENDUM` 和 `BID_TEMPLATE`；本切片支持 PDF、DOCX、XLSX，扩展名必须与 MIME 匹配，单文件最大 200 MB。
+- 上传成功创建一个 `procurement_document` 和首个 `document_version`，版本号固定为 `v1`，`parse_status=PENDING`，保存 SHA-256、大小、MIME 和对象存储 URI，并写入 `DOCUMENT_UPLOADED` 审计事件。
+- 上传幂等作用域包含实际 `project_id`；请求哈希包含文件类型、显示名、原始文件名、MIME 和内容 SHA-256。同键同请求返回首次 `201` 响应且不重复写对象；同键不同请求返回 `409 IDEMPOTENCY_CONFLICT`；同项目相同内容返回 `409 DOCUMENT_VERSION_EXISTS`。
+- 对象写入后若数据库、审计或幂等结果提交失败，服务必须回滚 PostgreSQL 事务并补偿删除对象；对象存储未配置时明确失败，不得默认把生产长期文件保存到进程内存或本地文件系统。
+- 本切片上传成功后不启动解析、不创建 `task_run`、不调用 Celery/Redis/Agent。第 10.37 节“上传成功后返回 `task_run_id`”适用于后续接入解析任务后的完整链路；当前阶段由独立 `/parse` 接口在后续子切片创建首次解析任务。
+
+统一错误码包括 `UNAUTHENTICATED`、`FORBIDDEN`、`CSRF_VALIDATION_FAILED`、`IDEMPOTENCY_KEY_REQUIRED`、`IDEMPOTENCY_CONFLICT`、`DOCUMENT_VERSION_EXISTS`、`VALIDATION_ERROR`、`OBJECT_STORAGE_NOT_CONFIGURED` 和 `INTERNAL_ERROR`。
+
 ## 六、要求、响应规划与人工关口接口
 
 | 方法 | 路径 | 用途 |

@@ -12,6 +12,7 @@ from app.api import api_router
 from app.core import RequestIdMiddleware, Settings, get_settings, install_exception_handlers
 from app.core.db import create_engine, create_session_factory
 from app.core.rate_limit import FallbackLoginRateLimiter, InMemoryFailureStore
+from app.projects.documents.storage import ObjectStorage, UnconfiguredObjectStorage
 from app.projects.schemas import CreateProjectRequest
 from app.projects.service import NoOpProjectCreationHooks, ProjectCreationHooks
 
@@ -174,6 +175,32 @@ def _install_openapi_schema(app: FastAPI) -> None:
                     },
                 }
 
+        document_operations = (
+            ("/api/v1/projects/{project_id}/documents", "get"),
+            ("/api/v1/projects/{project_id}/documents", "post"),
+        )
+        for path, method in document_operations:
+            operation = schema["paths"][path][method]
+            if method == "post":
+                for parameter in operation.get("parameters", []):
+                    if parameter.get("in") == "header" and parameter.get("name") in {
+                        "Idempotency-Key",
+                        "X-CSRF-Token",
+                    }:
+                        parameter["required"] = True
+                operation["security"] = [{"sessionCookie": [], "csrfToken": []}]
+            else:
+                operation["security"] = [{"sessionCookie": []}]
+            for status_code in ("400", "401", "403", "404", "409", "422", "500"):
+                operation["responses"][status_code] = {
+                    "description": "统一错误响应",
+                    "content": {
+                        "application/json": {
+                            "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                        }
+                    },
+                }
+
         app.openapi_schema = schema
         return schema
 
@@ -186,6 +213,7 @@ def create_app(
     rate_limiter: FallbackLoginRateLimiter | None = None,
     now_provider: Callable[[], datetime] | None = None,
     project_creation_hooks: ProjectCreationHooks | None = None,
+    document_storage: ObjectStorage | None = None,
 ) -> FastAPI:
     resolved_settings = settings or get_settings()
     engine = create_engine(resolved_settings.database_url)
@@ -193,6 +221,7 @@ def create_app(
     limiter = rate_limiter or _build_default_limiter(resolved_settings)
     clock = now_provider or _default_now_provider
     creation_hooks = project_creation_hooks or NoOpProjectCreationHooks()
+    storage = document_storage or UnconfiguredObjectStorage()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -202,6 +231,7 @@ def create_app(
         app.state.limiter = limiter
         app.state.clock = clock
         app.state.project_creation_hooks = creation_hooks
+        app.state.document_storage = storage
         try:
             yield
         finally:

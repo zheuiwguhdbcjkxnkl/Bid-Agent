@@ -207,3 +207,44 @@ def test_create_project_schema_excludes_source_fields() -> None:
     properties = schema["components"]["schemas"]["CreateProjectRequest"]["properties"]
     assert "project_source" not in properties
     assert "external_project_code" not in properties
+
+
+def test_project_document_openapi_declares_multipart_headers_path_and_errors() -> None:
+    schema = create_app().openapi()
+    path = "/api/v1/projects/{project_id}/documents"
+    assert path in schema["paths"]
+    operation = schema["paths"][path]["post"]
+    request_body = operation["requestBody"]
+    assert request_body["required"] is True
+    assert "multipart/form-data" in request_body["content"]
+    multipart_schema = request_body["content"]["multipart/form-data"]["schema"]
+    if "$ref" in multipart_schema:
+        multipart_schema = _resolve_internal_ref(schema, multipart_schema["$ref"])
+    assert isinstance(multipart_schema, dict)
+    assert set(multipart_schema["required"]) == {"file", "document_type", "display_name"}
+    parameters = operation["parameters"]
+    assert any(
+        parameter["name"] == "project_id"
+        and parameter["in"] == "path"
+        and parameter["required"] is True
+        for parameter in parameters
+    )
+    headers = {
+        parameter["name"]: parameter for parameter in parameters if parameter["in"] == "header"
+    }
+    assert headers["Idempotency-Key"]["required"] is True
+    assert headers["X-CSRF-Token"]["required"] is True
+    assert operation["security"] == [{"sessionCookie": [], "csrfToken": []}]
+    for status_code in ("400", "401", "403", "404", "409", "422", "500"):
+        assert operation["responses"][status_code]["content"]["application/json"]["schema"] == {
+            "$ref": "#/components/schemas/ErrorResponse"
+        }
+
+
+def test_project_document_openapi_declares_list_operation() -> None:
+    schema = create_app().openapi()
+    operation = schema["paths"]["/api/v1/projects/{project_id}/documents"]["get"]
+    assert operation["security"] == [{"sessionCookie": []}]
+    assert operation["responses"]["200"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/DocumentListResponse"
+    }
