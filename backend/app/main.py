@@ -30,6 +30,7 @@ def _build_default_limiter(settings: Settings) -> FallbackLoginRateLimiter:
 
 
 _PROJECT_CREATE_ERROR_STATUS_CODES = ("400", "401", "403", "409", "422", "500")
+_MEMBER_ERROR_STATUS_CODES = ("400", "401", "403", "404", "409", "422", "500")
 
 _PROJECT_CREATE_ERROR_DESCRIPTIONS = {
     "400": "幂等键缺失或非法",
@@ -110,6 +111,68 @@ def _install_openapi_schema(app: FastAPI) -> None:
                     "application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}
                 },
             }
+
+        member_operations = (
+            ("/api/v1/projects/{project_id}/members", "get"),
+            ("/api/v1/projects/{project_id}/members", "post"),
+            ("/api/v1/projects/{project_id}/members/{user_id}", "patch"),
+            ("/api/v1/projects/{project_id}/members/{user_id}", "delete"),
+        )
+        for path, method in member_operations:
+            operation = schema["paths"][path][method]
+            for parameter in operation.get("parameters", []):
+                if parameter.get("in") == "header" and parameter.get("name") in {
+                    "Idempotency-Key",
+                    "X-CSRF-Token",
+                }:
+                    parameter["required"] = True
+            if method == "post":
+                operation["parameters"] = [
+                    parameter
+                    for parameter in operation.get("parameters", [])
+                    if parameter.get("in") != "header"
+                    or parameter.get("name") not in {"Idempotency-Key", "X-CSRF-Token"}
+                ] + [
+                    {
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": True,
+                        "schema": {"type": "string"},
+                        "description": "幂等键，用于同请求重放识别",
+                    },
+                    {
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": True,
+                        "schema": {"type": "string"},
+                        "description": "CSRF 防护令牌，须与 csrf Cookie 匹配",
+                    },
+                ]
+            elif method == "get":
+                operation["parameters"] = operation.get("parameters", [])
+            else:
+                operation["parameters"] = [
+                    parameter
+                    for parameter in operation.get("parameters", [])
+                    if parameter.get("name") != "X-CSRF-Token"
+                ] + [
+                    {
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": True,
+                        "schema": {"type": "string"},
+                        "description": "CSRF 防护令牌，须与 csrf Cookie 匹配",
+                    }
+                ]
+            for status_code in _MEMBER_ERROR_STATUS_CODES:
+                operation["responses"][status_code] = {
+                    "description": "统一错误响应",
+                    "content": {
+                        "application/json": {
+                            "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                        }
+                    },
+                }
 
         app.openapi_schema = schema
         return schema

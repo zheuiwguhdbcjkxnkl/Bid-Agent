@@ -26,7 +26,9 @@ def test_add_member_request_rejects_invalid_role() -> None:
 
 def test_add_member_request_rejects_extra_field() -> None:
     with pytest.raises(ValidationError):
-        AddMemberRequest(user_id=uuid4(), project_role="BID_WRITER", extra=1)
+        AddMemberRequest.model_validate(
+            {"user_id": uuid4(), "project_role": "BID_WRITER", "extra": 1}
+        )
 
 
 def test_member_item_serializes_assigned_at() -> None:

@@ -54,8 +54,19 @@
 | PATCH | `/api/v1/projects/{project_id}` | 保存项目草稿或更新允许修改的基本信息 | 投标经理 |
 | GET | `/api/v1/projects/{project_id}/overview` | 获取项目阶段、当前行动、阻断和运行摘要 | 项目成员 |
 | GET | `/api/v1/projects/{project_id}/context` | 获取有效版本、基线、权限和允许动作 | 项目成员 |
-| POST | `/api/v1/projects/{project_id}/members` | 添加项目成员 | 投标经理 |
+| GET | `/api/v1/projects/{project_id}/members` | 查询当前项目 ACTIVE 成员 | 项目成员 |
+| POST | `/api/v1/projects/{project_id}/members` | 添加项目成员 | 项目负责人 |
+| PATCH | `/api/v1/projects/{project_id}/members/{user_id}` | 修改成员项目职责 | 项目负责人 |
+| DELETE | `/api/v1/projects/{project_id}/members/{user_id}` | 移除项目成员（软删除） | 项目负责人 |
 | POST | `/api/v1/projects/{project_id}/decision` | 记录是否参与投标的人工决定 | 投标经理 |
+
+成员接口约定：
+
+- `GET /members` 仅返回 `assignment_status=ACTIVE` 的成员，每项包含 `user_id`、`display_name`、`project_role`、`assigned_at`；调用者必须是项目成员。
+- `POST /members` 请求体为 `{ "user_id": "<uuid>", "project_role": "<project_role>" }`，强制使用 `Idempotency-Key`，并校验 CSRF、项目负责人权限、组织归属、账号状态和平台角色与项目职责映射；同键同请求重放首次响应，同键不同请求返回 `409 IDEMPOTENCY_CONFLICT`，ACTIVE 重复成员返回 `409 MEMBER_ALREADY_EXISTS`，REMOVED 成员恢复为 ACTIVE。
+- `PATCH /members/{user_id}` 请求体为 `{ "project_role": "<project_role>" }`，校验 CSRF、项目负责人权限、目标成员 ACTIVE 状态和职责映射；负责人不可降级，职责修改天然幂等。
+- `DELETE /members/{user_id}` 校验 CSRF 和项目负责人权限，将成员软删除为 `REMOVED`；负责人不可移除，重复移除幂等返回 `204`。
+- 成员写操作统一返回错误体 `ErrorResponse`，错误码包括 `FORBIDDEN`、`MEMBER_NOT_FOUND`、`MEMBER_ALREADY_EXISTS`、`MEMBER_ROLE_MISMATCH`、`IDEMPOTENCY_CONFLICT` 和 `CSRF_VALIDATION_FAILED`；成员变更与 `MEMBER_ADDED`、`MEMBER_REMOVED`、`MEMBER_ROLE_CHANGED` 审计事件在同一 PostgreSQL 事务中提交。
 
 创建项目请求采用分步创建口径：
 
