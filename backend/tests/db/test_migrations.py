@@ -25,6 +25,12 @@ EXPECTED_TABLES = {
     ("project", "bid_package"),
     ("project", "project_member"),
     ("audit", "audit_event"),
+    ("document", "procurement_document"),
+    ("document", "document_version"),
+    ("document", "document_parse"),
+    ("document", "document_page"),
+    ("document", "document_segment"),
+    ("workflow", "task_run"),
 }
 
 
@@ -54,11 +60,23 @@ def _fetch_tables() -> set[tuple[str, str]]:
                 """
                 SELECT table_schema, table_name
                 FROM information_schema.tables
-                WHERE table_schema IN ('iam', 'project', 'audit')
+                WHERE table_schema IN ('iam', 'project', 'document', 'audit', 'workflow')
                 ORDER BY table_schema, table_name
                 """
             )
             return set(cursor.fetchall())
+
+
+def _schema_exists(schema_name: str) -> bool:
+    with psycopg.connect(PSYCOPG_DATABASE_URL) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = %s)",
+                (schema_name,),
+            )
+            row = cursor.fetchone()
+            assert row is not None
+            return bool(row[0])
 
 
 def _fetch_user_constraints() -> set[str]:
@@ -118,3 +136,34 @@ def test_alembic_downgrade_and_upgrade_cycle(alembic_env: dict[str, str]) -> Non
         assert "uq_user_organization_login_name_normalized" in _fetch_user_indexes()
     finally:
         _run_alembic(alembic_env, "upgrade", "head")
+
+
+def test_document_migration_rejects_preexisting_schema(
+    alembic_env: dict[str, str],
+) -> None:
+    try:
+        downgrade_base_result = _run_alembic(alembic_env, "downgrade", "base")
+        assert downgrade_base_result.returncode == 0, (
+            downgrade_base_result.stderr or downgrade_base_result.stdout
+        )
+
+        with psycopg.connect(PSYCOPG_DATABASE_URL, autocommit=True) as connection:
+            connection.execute("CREATE SCHEMA document")
+
+        upgrade_result = _run_alembic(alembic_env, "upgrade", "head")
+
+        assert upgrade_result.returncode != 0
+        assert (
+            "document schema already exists"
+            in (upgrade_result.stderr + upgrade_result.stdout).lower()
+        )
+        assert _schema_exists("document")
+    finally:
+        restore_downgrade_result = _run_alembic(alembic_env, "downgrade", "base")
+        assert restore_downgrade_result.returncode == 0, (
+            restore_downgrade_result.stderr or restore_downgrade_result.stdout
+        )
+        with psycopg.connect(PSYCOPG_DATABASE_URL, autocommit=True) as connection:
+            connection.execute("DROP SCHEMA IF EXISTS document CASCADE")
+        restore_result = _run_alembic(alembic_env, "upgrade", "head")
+        assert restore_result.returncode == 0, restore_result.stderr or restore_result.stdout

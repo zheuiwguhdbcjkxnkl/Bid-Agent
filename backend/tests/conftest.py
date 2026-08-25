@@ -25,6 +25,12 @@ PSYCOPG_TEST_DATABASE_URL = to_sync_database_url(TEST_DATABASE_URL).replace("+ps
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 TRUNCATE_SQL = """
 TRUNCATE TABLE
+    workflow.task_run,
+    document.document_segment,
+    document.document_page,
+    document.document_parse,
+    document.document_version,
+    document.procurement_document,
     audit.audit_event,
     project.project_member,
     project.bid_package,

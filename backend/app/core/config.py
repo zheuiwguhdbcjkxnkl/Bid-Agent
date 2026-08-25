@@ -30,6 +30,14 @@ class Settings(BaseSettings):
     login_failure_limit: int = 5
     login_failure_window_seconds: int = 900
     redis_url: str | None = None
+    mcp_endpoint: str = "http://mcp-tools:8000/mcp"
+    mcp_service_token: str | None = None
+    mineru_endpoint: str = "http://mineru:8000"
+    minio_endpoint: str | None = None
+    minio_access_key: str | None = None
+    minio_secret_key: str | None = None
+    minio_bucket_name: str = "bid-agent-files"
+    minio_secure: bool = False
 
     @field_validator("allowed_origins", mode="before")
     @classmethod

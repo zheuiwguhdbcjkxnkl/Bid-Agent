@@ -168,6 +168,56 @@ def insert_project(
     return project_id
 
 
+def insert_procurement_document(
+    connection: psycopg.Connection,
+    project_id: uuid.UUID,
+    document_type: str = "PROCUREMENT_FILE",
+    display_name: str = "采购文件",
+) -> uuid.UUID:
+    document_id = uuid.uuid4()
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            INSERT INTO document.procurement_document (
+                id, project_id, document_type, display_name
+            )
+            VALUES (%s, %s, %s, %s)
+            """,
+            (document_id, project_id, document_type, display_name),
+        )
+    return document_id
+
+
+def insert_document_version(
+    connection: psycopg.Connection,
+    document_id: uuid.UUID,
+    version_no: str = "1",
+    content_hash: str = "hash-1",
+) -> uuid.UUID:
+    version_id = uuid.uuid4()
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            INSERT INTO document.document_version (
+                id, document_id, version_no, file_name, content_type,
+                file_size, content_hash, storage_uri
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                version_id,
+                document_id,
+                version_no,
+                "采购文件.pdf",
+                "application/pdf",
+                1024,
+                content_hash,
+                "s3://test-bucket/document.pdf",
+            ),
+        )
+    return version_id
+
+
 def insert_package(
     connection: psycopg.Connection,
     project_id: uuid.UUID,
@@ -235,6 +285,178 @@ def insert_audit_event(
             ),
         )
     return audit_id
+
+
+def test_document_version_rejects_duplicate_document_hash(
+    db_connection: psycopg.Connection,
+) -> None:
+    organization_id = insert_organization(db_connection, tenant_key="document-tenant")
+    project_id = insert_project(db_connection, organization_id, project_code="DOC-001")
+    with db_connection.cursor() as cursor:
+        cursor.execute(
+            """
+            INSERT INTO document.procurement_document (
+                id, project_id, document_type, display_name, document_status, created_at
+            )
+            VALUES (gen_random_uuid(), %s, 'PROCUREMENT_FILE', '招标文件', 'ACTIVE', now())
+            RETURNING id
+            """,
+            (project_id,),
+        )
+        row = cursor.fetchone()
+        assert row is not None
+        document_id = row[0]
+        cursor.execute(
+            """
+            INSERT INTO document.document_version (
+                id, document_id, version_no, file_name, content_type, file_size,
+                content_hash, storage_uri, parse_status, uploaded_at
+            )
+            VALUES (
+                gen_random_uuid(), %s, 'v1', 'bid.pdf', 'application/pdf', 3,
+                'hash-1', 'memory://bid.pdf', 'PENDING', now()
+            )
+            """,
+            (document_id,),
+        )
+        with pytest.raises(IntegrityError) as exc_info:
+            cursor.execute(
+                """
+                INSERT INTO document.document_version (
+                    id, document_id, version_no, file_name, content_type, file_size,
+                    content_hash, storage_uri, parse_status, uploaded_at
+                )
+                VALUES (
+                    gen_random_uuid(), %s, 'v2', 'bid-copy.pdf', 'application/pdf', 3,
+                    'hash-1', 'memory://bid-copy.pdf', 'PENDING', now()
+                )
+                """,
+                (document_id,),
+            )
+    assert_constraint_name(exc_info, "uq_document_version_hash")
+    db_connection.rollback()
+
+
+def test_document_constraints_reject_invalid_values(db_connection: psycopg.Connection) -> None:
+    organization_id = insert_organization(db_connection, tenant_key="document-constraints")
+    project_id = insert_project(db_connection, organization_id, project_code="DOC-002")
+    db_connection.commit()
+    with db_connection.cursor() as cursor:
+        with pytest.raises(IntegrityError) as exc_info:
+            cursor.execute(
+                """
+                INSERT INTO document.procurement_document (
+                    id, project_id, document_type, display_name, document_status
+                )
+                VALUES (gen_random_uuid(), %s, 'UNSUPPORTED', '文件', 'ACTIVE')
+                """,
+                (project_id,),
+            )
+    assert_constraint_name(exc_info, "ck_procurement_document_type")
+    db_connection.rollback()
+
+    with db_connection.cursor() as cursor:
+        cursor.execute(
+            """
+            INSERT INTO document.procurement_document (
+                id, project_id, document_type, display_name, document_status
+            )
+            VALUES (gen_random_uuid(), %s, 'PROCUREMENT_FILE', '招标文件', 'ACTIVE')
+            RETURNING id
+            """,
+            (project_id,),
+        )
+        row = cursor.fetchone()
+        assert row is not None
+        document_id = row[0]
+        with pytest.raises(IntegrityError) as exc_info:
+            cursor.execute(
+                """
+                INSERT INTO document.document_version (
+                    id, document_id, version_no, file_name, content_type, file_size,
+                    content_hash, storage_uri, parse_status
+                )
+                VALUES (
+                    gen_random_uuid(), %s, 'v1', 'bid.pdf', 'application/pdf', -1,
+                    'hash-invalid-size', 'memory://bid.pdf', 'PENDING'
+                )
+                """,
+                (document_id,),
+            )
+    assert_constraint_name(exc_info, "ck_document_version_file_size_non_negative")
+    db_connection.rollback()
+
+    with db_connection.cursor() as cursor:
+        with pytest.raises(IntegrityError) as exc_info:
+            cursor.execute(
+                """
+                INSERT INTO document.document_version (
+                    id, document_id, version_no, file_name, content_type, file_size,
+                    content_hash, storage_uri, parse_status
+                )
+                VALUES (
+                    gen_random_uuid(), %s, 'v1', 'bid.pdf', 'application/pdf', 1,
+                    'hash-invalid-status', 'memory://bid.pdf', 'UNKNOWN'
+                )
+                """,
+                (document_id,),
+            )
+    assert_constraint_name(exc_info, "ck_document_version_parse_status")
+    db_connection.rollback()
+
+
+def test_document_status_must_be_active(db_connection: psycopg.Connection) -> None:
+    organization_id = insert_organization(db_connection, tenant_key="document-status")
+    project_id = insert_project(db_connection, organization_id, project_code="DOC-003")
+    with db_connection.cursor() as cursor:
+        with pytest.raises(IntegrityError) as exc_info:
+            cursor.execute(
+                """
+                INSERT INTO document.procurement_document (
+                    id, project_id, document_type, display_name, document_status
+                )
+                VALUES (gen_random_uuid(), %s, 'PROCUREMENT_FILE', '文件', 'ARCHIVED')
+                """,
+                (project_id,),
+            )
+    assert_constraint_name(exc_info, "ck_procurement_document_status")
+    db_connection.rollback()
+
+
+def test_procurement_document_rejects_missing_project_id(
+    db_connection: psycopg.Connection,
+) -> None:
+    with pytest.raises(IntegrityError) as exc_info:
+        insert_procurement_document(db_connection, uuid.uuid4())
+    original_error = getattr(exc_info.value, "orig", exc_info.value)
+    assert original_error.sqlstate == "23503"
+    assert original_error.diag.table_name == "procurement_document"
+    db_connection.rollback()
+
+
+def test_document_version_rejects_missing_document_id(
+    db_connection: psycopg.Connection,
+) -> None:
+    with pytest.raises(IntegrityError) as exc_info:
+        insert_document_version(db_connection, uuid.uuid4())
+    original_error = getattr(exc_info.value, "orig", exc_info.value)
+    assert original_error.sqlstate == "23503"
+    assert original_error.diag.table_name == "document_version"
+    db_connection.rollback()
+
+
+def test_document_version_must_have_unique_version_no_per_document(
+    db_connection: psycopg.Connection,
+) -> None:
+    organization_id = insert_organization(db_connection)
+    project_id = insert_project(db_connection, organization_id)
+    document_id = insert_procurement_document(db_connection, project_id)
+    insert_document_version(db_connection, document_id, version_no="1", content_hash="hash-1")
+
+    with pytest.raises(IntegrityError) as exc_info:
+        insert_document_version(db_connection, document_id, version_no="1", content_hash="hash-2")
+    assert_constraint_name(exc_info, "uq_document_version_no")
+    db_connection.rollback()
 
 
 def test_normalized_user_login_name_must_be_unique_within_organization(

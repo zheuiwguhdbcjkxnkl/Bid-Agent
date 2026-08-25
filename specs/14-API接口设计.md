@@ -54,8 +54,19 @@
 | PATCH | `/api/v1/projects/{project_id}` | 保存项目草稿或更新允许修改的基本信息 | 投标经理 |
 | GET | `/api/v1/projects/{project_id}/overview` | 获取项目阶段、当前行动、阻断和运行摘要 | 项目成员 |
 | GET | `/api/v1/projects/{project_id}/context` | 获取有效版本、基线、权限和允许动作 | 项目成员 |
-| POST | `/api/v1/projects/{project_id}/members` | 添加项目成员 | 投标经理 |
+| GET | `/api/v1/projects/{project_id}/members` | 查询当前项目 ACTIVE 成员 | 项目成员 |
+| POST | `/api/v1/projects/{project_id}/members` | 添加项目成员 | 项目负责人 |
+| PATCH | `/api/v1/projects/{project_id}/members/{user_id}` | 修改成员项目职责 | 项目负责人 |
+| DELETE | `/api/v1/projects/{project_id}/members/{user_id}` | 移除项目成员（软删除） | 项目负责人 |
 | POST | `/api/v1/projects/{project_id}/decision` | 记录是否参与投标的人工决定 | 投标经理 |
+
+成员接口约定：
+
+- `GET /members` 仅返回 `assignment_status=ACTIVE` 的成员，每项包含 `user_id`、`display_name`、`project_role`、`assigned_at`；调用者必须是项目成员。
+- `POST /members` 请求体为 `{ "user_id": "<uuid>", "project_role": "<project_role>" }`，强制使用 `Idempotency-Key`，并校验 CSRF、项目负责人权限、组织归属、账号状态和平台角色与项目职责映射；同键同请求重放首次响应，同键不同请求返回 `409 IDEMPOTENCY_CONFLICT`，ACTIVE 重复成员返回 `409 MEMBER_ALREADY_EXISTS`，REMOVED 成员恢复为 ACTIVE。
+- `PATCH /members/{user_id}` 请求体为 `{ "project_role": "<project_role>" }`，校验 CSRF、项目负责人权限、目标成员 ACTIVE 状态和职责映射；负责人不可降级，职责修改天然幂等。
+- `DELETE /members/{user_id}` 校验 CSRF 和项目负责人权限，将成员软删除为 `REMOVED`；负责人不可移除，重复移除幂等返回 `204`。
+- 成员写操作统一返回错误体 `ErrorResponse`，错误码包括 `FORBIDDEN`、`MEMBER_NOT_FOUND`、`MEMBER_ALREADY_EXISTS`、`MEMBER_ROLE_MISMATCH`、`IDEMPOTENCY_CONFLICT` 和 `CSRF_VALIDATION_FAILED`；成员变更与 `MEMBER_ADDED`、`MEMBER_REMOVED`、`MEMBER_ROLE_CHANGED` 审计事件在同一 PostgreSQL 事务中提交。
 
 创建项目请求采用分步创建口径：
 
@@ -83,6 +94,27 @@
 | GET | `/api/v1/projects/{project_id}/task-runs` | 查询项目运行任务 |
 
 原文件进入MinIO，PostgreSQL保存对象键、SHA-256、版本、分类、权限、解析状态和来源关系。上传、解析、OCR、复杂图表理解和导出均使用`task_run`记录最终状态。
+
+当前 M1 文件上传子切片只实现文件列表和逻辑文件首个版本上传，契约补充如下：
+
+- `GET /api/v1/projects/{project_id}/documents` 要求有效 PostgreSQL Session 和当前组织内的 ACTIVE 项目成员关系，返回逻辑文件及其版本摘要；不返回文件二进制内容。
+- `POST /api/v1/projects/{project_id}/documents` 使用 `multipart/form-data`，字段为 `file`、`document_type` 和 `display_name`；要求有效 Session、`X-CSRF-Token` 和 `Idempotency-Key`，仅当前组织内的 ACTIVE 项目负责人可以上传。
+- `document_type` 仅允许 `ANNOUNCEMENT`、`PROCUREMENT_FILE`、`CLARIFICATION`、`CORRECTION`、`ADDENDUM` 和 `BID_TEMPLATE`；本切片支持 PDF、DOCX、XLSX，扩展名必须与 MIME 匹配，单文件最大 200 MB。
+- 上传成功创建一个 `procurement_document` 和首个 `document_version`，版本号固定为 `v1`，`parse_status=PENDING`，保存 SHA-256、大小、MIME 和对象存储 URI，并写入 `DOCUMENT_UPLOADED` 审计事件。
+- 上传幂等作用域包含实际 `project_id`；请求哈希包含文件类型、显示名、原始文件名、MIME 和内容 SHA-256。同键同请求返回首次 `201` 响应且不重复写对象；同键不同请求返回 `409 IDEMPOTENCY_CONFLICT`；同项目相同内容返回 `409 DOCUMENT_VERSION_EXISTS`。
+- 对象写入后若数据库、审计或幂等结果提交失败，服务必须回滚 PostgreSQL 事务并补偿删除对象；对象存储未配置时明确失败，不得默认把生产长期文件保存到进程内存或本地文件系统。
+- 本切片上传成功后不启动解析、不创建 `task_run`、不调用 Celery/Redis/Agent。第 10.37 节“上传成功后返回 `task_run_id`”适用于后续接入解析任务后的完整链路；当前阶段由独立 `/parse` 接口创建首次解析任务。
+
+当前 M1 首次解析与任务查询子切片补充如下：
+
+- `POST /api/v1/document-versions/{document_version_id}/parse` 要求有效 Session、`X-CSRF-Token`、`Idempotency-Key` 和当前组织内 ACTIVE 项目负责人；只接受 `parse_status=PENDING` 的版本，成功返回 `202` 和 `StartDocumentParseResponse.task_run`。
+- 受理事务在 PostgreSQL 中创建 `document_parse`、`task_run=QUEUED`、幂等成功结果和 `DOCUMENT_PARSE_QUEUED` 审计，并将文件版本改为 `PARSING`；事务提交后才发布 Celery。Broker 发布失败时保留 `QUEUED`，接口仍返回已持久化的 `202` 结果，等待安全补投。
+- 同一组织、操作者、版本和幂等键的相同请求重放首次结果且不重复发布；同键不同请求返回 `409 IDEMPOTENCY_CONFLICT`；同一文件版本只允许一个 `QUEUED/DISPATCHED/RUNNING` 的首次解析任务。
+- `GET /api/v1/task-runs/{task_run_id}` 和 `GET /api/v1/projects/{project_id}/task-runs` 仅允许当前组织内 ACTIVE 项目成员读取，状态来源只读 PostgreSQL；项目任务列表支持 `task_type`、`task_status` 过滤。
+- Celery Worker 原子领取任务后通过内部 Streamable HTTP MCP 调用 `document.ingest`。PDF/图片由内部自托管 MinerU 处理，DOCX 使用 `python-docx`，XLSX 使用 `openpyxl`；输出必须转换和校验为统一 Document IR 后才能持久化。
+- 成功时 `document_parse=SUCCEEDED`、`document_version=PARSED`、`task_run=SUCCEEDED`；失败时 `document_parse=FAILED`、`document_version=PARSE_FAILED`、`task_run=FAILED`，原始对象保持不变。
+
+统一错误码包括 `UNAUTHENTICATED`、`FORBIDDEN`、`CSRF_VALIDATION_FAILED`、`IDEMPOTENCY_KEY_REQUIRED`、`IDEMPOTENCY_CONFLICT`、`DOCUMENT_VERSION_EXISTS`、`VALIDATION_ERROR`、`OBJECT_STORAGE_NOT_CONFIGURED` 和 `INTERNAL_ERROR`。
 
 ## 六、要求、响应规划与人工关口接口
 

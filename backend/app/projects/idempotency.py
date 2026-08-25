@@ -17,6 +17,9 @@ _IDEMPOTENCY_REQUIRED_CODE = "IDEMPOTENCY_KEY_REQUIRED"
 _IDEMPOTENCY_REQUIRED_MESSAGE = "请求缺少有效的 Idempotency-Key"
 _IDEMPOTENCY_CONFLICT_CODE = "IDEMPOTENCY_CONFLICT"
 _ROUTE_TEMPLATE = "/api/v1/projects"
+_MEMBER_ROUTE_TEMPLATE = "/api/v1/projects/{project_id}/members"
+_DOCUMENT_UPLOAD_ROUTE_TEMPLATE = "/api/v1/projects/{project_id}/documents"
+_DOCUMENT_PARSE_ROUTE_TEMPLATE = "/api/v1/document-versions/{document_version_id}/parse"
 _HTTP_METHOD_POST = "POST"
 _PROCESSING = "PROCESSING"
 _SUCCEEDED = "SUCCEEDED"
@@ -68,6 +71,56 @@ def build_project_create_scope(
         actor_user_id=actor_user_id,
         http_method=_HTTP_METHOD_POST,
         route_template=_ROUTE_TEMPLATE,
+        idempotency_key=key,
+    )
+
+
+def build_member_add_scope(
+    *,
+    organization_id: UUID,
+    actor_user_id: UUID,
+    project_id: UUID,
+    key: str,
+) -> IdempotencyScope:
+    return IdempotencyScope(
+        organization_id=organization_id,
+        actor_user_id=actor_user_id,
+        http_method=_HTTP_METHOD_POST,
+        route_template=_MEMBER_ROUTE_TEMPLATE.format(project_id=project_id),
+        idempotency_key=key,
+    )
+
+
+def build_document_upload_scope(
+    *,
+    organization_id: UUID,
+    actor_user_id: UUID,
+    project_id: UUID,
+    key: str,
+) -> IdempotencyScope:
+    return IdempotencyScope(
+        organization_id=organization_id,
+        actor_user_id=actor_user_id,
+        http_method=_HTTP_METHOD_POST,
+        route_template=_DOCUMENT_UPLOAD_ROUTE_TEMPLATE.format(project_id=project_id),
+        idempotency_key=key,
+    )
+
+
+def build_document_parse_scope(
+    *,
+    organization_id: UUID,
+    actor_user_id: UUID,
+    document_version_id: UUID,
+    key: str,
+) -> IdempotencyScope:
+    return IdempotencyScope(
+        organization_id=organization_id,
+        actor_user_id=actor_user_id,
+        http_method=_HTTP_METHOD_POST,
+        route_template=_DOCUMENT_PARSE_ROUTE_TEMPLATE.format(
+            document_version_id=document_version_id
+        ),
         idempotency_key=key,
     )
 
