@@ -15,6 +15,11 @@ dependencies = [
   "redis",
   "sqlalchemy[asyncio]",
   "uvicorn[standard]",
+  "celery[redis]>=5.5,<5.6",
+  "mcp==2.1.0",
+  "python-docx>=1.2,<2",
+  "openpyxl>=3.1,<4",
+  "minio==7.2.20",
 ]
 
 [dependency-groups]
@@ -23,6 +28,7 @@ dev = [
   "pytest",
   "pytest-asyncio",
   "ruff",
+  "types-openpyxl>=3.1,<4",
 ]
 
 

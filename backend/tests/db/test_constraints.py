@@ -396,7 +396,7 @@ def test_document_constraints_reject_invalid_values(db_connection: psycopg.Conne
                 )
                 VALUES (
                     gen_random_uuid(), %s, 'v1', 'bid.pdf', 'application/pdf', 1,
-                    'hash-invalid-status', 'memory://bid.pdf', 'PARSED'
+                    'hash-invalid-status', 'memory://bid.pdf', 'UNKNOWN'
                 )
                 """,
                 (document_id,),

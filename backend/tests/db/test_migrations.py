@@ -27,6 +27,10 @@ EXPECTED_TABLES = {
     ("audit", "audit_event"),
     ("document", "procurement_document"),
     ("document", "document_version"),
+    ("document", "document_parse"),
+    ("document", "document_page"),
+    ("document", "document_segment"),
+    ("workflow", "task_run"),
 }
 
 
@@ -56,7 +60,7 @@ def _fetch_tables() -> set[tuple[str, str]]:
                 """
                 SELECT table_schema, table_name
                 FROM information_schema.tables
-                WHERE table_schema IN ('iam', 'project', 'document', 'audit')
+                WHERE table_schema IN ('iam', 'project', 'document', 'audit', 'workflow')
                 ORDER BY table_schema, table_name
                 """
             )

@@ -248,3 +248,37 @@ def test_project_document_openapi_declares_list_operation() -> None:
     assert operation["responses"]["200"]["content"]["application/json"]["schema"] == {
         "$ref": "#/components/schemas/DocumentListResponse"
     }
+
+
+def test_document_parse_openapi_declares_start_operation_contract() -> None:
+    schema = create_app().openapi()
+    path = "/api/v1/document-versions/{document_version_id}/parse"
+    operation = schema["paths"][path]["post"]
+
+    assert operation["responses"]["202"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/StartDocumentParseResponse"
+    }
+    headers = {
+        parameter["name"]: parameter
+        for parameter in operation["parameters"]
+        if parameter.get("in") == "header"
+    }
+    assert headers["Idempotency-Key"]["required"] is True
+    assert headers["X-CSRF-Token"]["required"] is True
+    assert operation["security"] == [{"sessionCookie": [], "csrfToken": []}]
+
+
+def test_task_run_openapi_declares_single_and_project_list_operations() -> None:
+    schema = create_app().openapi()
+    paths = schema["paths"]
+
+    assert paths["/api/v1/task-runs/{task_run_id}"]["get"]["responses"]["200"]["content"][
+        "application/json"
+    ]["schema"] == {"$ref": "#/components/schemas/TaskRunItem"}
+    assert paths["/api/v1/projects/{project_id}/task-runs"]["get"]["responses"]["200"]["content"][
+        "application/json"
+    ]["schema"] == {"$ref": "#/components/schemas/TaskRunListResponse"}
+    assert paths["/api/v1/task-runs/{task_run_id}"]["get"]["security"] == [{"sessionCookie": []}]
+    assert paths["/api/v1/projects/{project_id}/task-runs"]["get"]["security"] == [
+        {"sessionCookie": []}
+    ]

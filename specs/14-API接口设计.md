@@ -103,7 +103,16 @@
 - 上传成功创建一个 `procurement_document` 和首个 `document_version`，版本号固定为 `v1`，`parse_status=PENDING`，保存 SHA-256、大小、MIME 和对象存储 URI，并写入 `DOCUMENT_UPLOADED` 审计事件。
 - 上传幂等作用域包含实际 `project_id`；请求哈希包含文件类型、显示名、原始文件名、MIME 和内容 SHA-256。同键同请求返回首次 `201` 响应且不重复写对象；同键不同请求返回 `409 IDEMPOTENCY_CONFLICT`；同项目相同内容返回 `409 DOCUMENT_VERSION_EXISTS`。
 - 对象写入后若数据库、审计或幂等结果提交失败，服务必须回滚 PostgreSQL 事务并补偿删除对象；对象存储未配置时明确失败，不得默认把生产长期文件保存到进程内存或本地文件系统。
-- 本切片上传成功后不启动解析、不创建 `task_run`、不调用 Celery/Redis/Agent。第 10.37 节“上传成功后返回 `task_run_id`”适用于后续接入解析任务后的完整链路；当前阶段由独立 `/parse` 接口在后续子切片创建首次解析任务。
+- 本切片上传成功后不启动解析、不创建 `task_run`、不调用 Celery/Redis/Agent。第 10.37 节“上传成功后返回 `task_run_id`”适用于后续接入解析任务后的完整链路；当前阶段由独立 `/parse` 接口创建首次解析任务。
+
+当前 M1 首次解析与任务查询子切片补充如下：
+
+- `POST /api/v1/document-versions/{document_version_id}/parse` 要求有效 Session、`X-CSRF-Token`、`Idempotency-Key` 和当前组织内 ACTIVE 项目负责人；只接受 `parse_status=PENDING` 的版本，成功返回 `202` 和 `StartDocumentParseResponse.task_run`。
+- 受理事务在 PostgreSQL 中创建 `document_parse`、`task_run=QUEUED`、幂等成功结果和 `DOCUMENT_PARSE_QUEUED` 审计，并将文件版本改为 `PARSING`；事务提交后才发布 Celery。Broker 发布失败时保留 `QUEUED`，接口仍返回已持久化的 `202` 结果，等待安全补投。
+- 同一组织、操作者、版本和幂等键的相同请求重放首次结果且不重复发布；同键不同请求返回 `409 IDEMPOTENCY_CONFLICT`；同一文件版本只允许一个 `QUEUED/DISPATCHED/RUNNING` 的首次解析任务。
+- `GET /api/v1/task-runs/{task_run_id}` 和 `GET /api/v1/projects/{project_id}/task-runs` 仅允许当前组织内 ACTIVE 项目成员读取，状态来源只读 PostgreSQL；项目任务列表支持 `task_type`、`task_status` 过滤。
+- Celery Worker 原子领取任务后通过内部 Streamable HTTP MCP 调用 `document.ingest`。PDF/图片由内部自托管 MinerU 处理，DOCX 使用 `python-docx`，XLSX 使用 `openpyxl`；输出必须转换和校验为统一 Document IR 后才能持久化。
+- 成功时 `document_parse=SUCCEEDED`、`document_version=PARSED`、`task_run=SUCCEEDED`；失败时 `document_parse=FAILED`、`document_version=PARSE_FAILED`、`task_run=FAILED`，原始对象保持不变。
 
 统一错误码包括 `UNAUTHENTICATED`、`FORBIDDEN`、`CSRF_VALIDATION_FAILED`、`IDEMPOTENCY_KEY_REQUIRED`、`IDEMPOTENCY_CONFLICT`、`DOCUMENT_VERSION_EXISTS`、`VALIDATION_ERROR`、`OBJECT_STORAGE_NOT_CONFIGURED` 和 `INTERNAL_ERROR`。
 

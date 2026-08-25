@@ -12,9 +12,17 @@ from app.api import api_router
 from app.core import RequestIdMiddleware, Settings, get_settings, install_exception_handlers
 from app.core.db import create_engine, create_session_factory
 from app.core.rate_limit import FallbackLoginRateLimiter, InMemoryFailureStore
-from app.projects.documents.storage import ObjectStorage, UnconfiguredObjectStorage
+from app.projects.documents.storage import ObjectStorage
+from app.projects.documents.storage_factory import build_object_storage
 from app.projects.schemas import CreateProjectRequest
 from app.projects.service import NoOpProjectCreationHooks, ProjectCreationHooks
+from app.workflows.celery_app import create_celery_app
+from app.workflows.dispatcher import (
+    CeleryTaskDispatcher,
+    TaskDispatcher,
+    UnconfiguredTaskDispatcher,
+)
+from app.workflows.publisher import CeleryTaskPublisher
 
 
 def _default_now_provider() -> datetime:
@@ -201,6 +209,56 @@ def _install_openapi_schema(app: FastAPI) -> None:
                     },
                 }
 
+        parse_operation = schema["paths"]["/api/v1/document-versions/{document_version_id}/parse"][
+            "post"
+        ]
+        parse_operation["parameters"] = [
+            parameter
+            for parameter in parse_operation.get("parameters", [])
+            if parameter.get("in") != "header"
+            or parameter.get("name") not in {"Idempotency-Key", "X-CSRF-Token"}
+        ] + [
+            {
+                "name": "Idempotency-Key",
+                "in": "header",
+                "required": True,
+                "schema": {"type": "string"},
+                "description": "幂等键，用于同请求重放识别",
+            },
+            {
+                "name": "X-CSRF-Token",
+                "in": "header",
+                "required": True,
+                "schema": {"type": "string"},
+                "description": "CSRF 防护令牌，须与 csrf Cookie 匹配",
+            },
+        ]
+        parse_operation["security"] = [{"sessionCookie": [], "csrfToken": []}]
+        for status_code in ("400", "401", "403", "404", "409", "422", "500"):
+            parse_operation["responses"][status_code] = {
+                "description": "统一错误响应",
+                "content": {
+                    "application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}
+                },
+            }
+
+        task_operations = (
+            ("/api/v1/task-runs/{task_run_id}", "get"),
+            ("/api/v1/projects/{project_id}/task-runs", "get"),
+        )
+        for path, method in task_operations:
+            operation = schema["paths"][path][method]
+            operation["security"] = [{"sessionCookie": []}]
+            for status_code in ("401", "403", "404", "422", "500"):
+                operation["responses"][status_code] = {
+                    "description": "统一错误响应",
+                    "content": {
+                        "application/json": {
+                            "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                        }
+                    },
+                }
+
         app.openapi_schema = schema
         return schema
 
@@ -214,6 +272,7 @@ def create_app(
     now_provider: Callable[[], datetime] | None = None,
     project_creation_hooks: ProjectCreationHooks | None = None,
     document_storage: ObjectStorage | None = None,
+    task_dispatcher: TaskDispatcher | None = None,
 ) -> FastAPI:
     resolved_settings = settings or get_settings()
     engine = create_engine(resolved_settings.database_url)
@@ -221,7 +280,16 @@ def create_app(
     limiter = rate_limiter or _build_default_limiter(resolved_settings)
     clock = now_provider or _default_now_provider
     creation_hooks = project_creation_hooks or NoOpProjectCreationHooks()
-    storage = document_storage or UnconfiguredObjectStorage()
+    storage = document_storage or build_object_storage(resolved_settings)
+    dispatcher = task_dispatcher
+    if dispatcher is None and resolved_settings.redis_url is not None:
+        celery_app = create_celery_app(resolved_settings.redis_url)
+        dispatcher = CeleryTaskDispatcher(
+            publisher=CeleryTaskPublisher(celery_app),
+            session_factory=session_factory,
+            now_provider=clock,
+        )
+    dispatcher = dispatcher or UnconfiguredTaskDispatcher()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -232,6 +300,7 @@ def create_app(
         app.state.clock = clock
         app.state.project_creation_hooks = creation_hooks
         app.state.document_storage = storage
+        app.state.task_dispatcher = dispatcher
         try:
             yield
         finally:

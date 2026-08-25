@@ -6,11 +6,15 @@ from app.auth.api import router as auth_router
 from app.projects.api import me_router
 from app.projects.api import router as projects_router
 from app.projects.documents.api import router as documents_router
+from app.projects.documents.parse_api import router as document_parse_router
 from app.projects.members.api import router as members_router
+from app.workflows.api import router as task_runs_router
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(auth_router)
 api_router.include_router(projects_router)
 api_router.include_router(members_router)
 api_router.include_router(documents_router)
+api_router.include_router(document_parse_router)
+api_router.include_router(task_runs_router)
 api_router.include_router(me_router)
